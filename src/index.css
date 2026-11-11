@@ -1,0 +1,54 @@
+:root {
+  /* Paleta Oficial Obligatoria de ScanFit */
+  --sf-green: #7DAD3D;
+  --sf-green-hover: #6c9832;
+  --sf-green-soft: rgba(125, 173, 61, 0.14);
+  --sf-navy: #141B34;
+  --sf-navy-light: #1d2647;
+  --sf-slate: #324651;
+  --sf-white: #FFFFFF;
+  --sf-bg-light: #F4F7F5;
+  --sf-border: #DCE3E6;
+  --sf-danger: #D9383A;
+  --sf-danger-soft: rgba(217, 56, 58, 0.1);
+
+  /* Tipografía Oficial: Montserrat */
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--sf-navy);
+  background-color: var(--sf-bg-light);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--sf-bg-light);
+  color: var(--sf-navy);
+  font-family: 'Montserrat', sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: 'Montserrat', sans-serif;
+}
+
+code {
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(20, 27, 52, 0.08);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
