@@ -1,25 +1,21 @@
 # ScanFit — Mi Plan de Entrenamiento
 
-**Materia:** Desarrollo Frontend II (Código: 581373) — UADE (FADi / DETEX)  
-**Trabajo Práctico 2:** Aplicación en React con IA, Firebase y despliegue en Vercel  
-**Docente:** Prof. Joaquín Cerviño  
-
 ---
 
 ## 1. Sobre el Proyecto
 
 **ScanFit** nació como un proyecto de investigación y prototipado en *Diseño de Interacción I* orientado a acompañar a usuarios principiantes e intermedios en el gimnasio que suelen sentirse desorientados con sus rutinas y el uso de las máquinas.
 
-Siguiendo la consigna del **Trabajo Práctico 2** de desarrollar una propuesta acotada, enfocada y 100% funcional con persistencia real en la nube, esta aplicación implementa el módulo central **"Mi Plan de Entrenamiento"**. Permite gestionar de forma integral la rutina semanal del usuario mediante un flujo **CRUD completo en Cloud Firestore** sobre la colección `scanfit_entrenamientos`.
+Siguiendo la consigna de desarrollar una propuesta acotada, enfocada y 100% funcional con persistencia real en la nube, esta aplicación implementa el módulo central **"Mi Plan de Entrenamiento"**. Permite gestionar de forma integral la rutina semanal del usuario mediante un flujo **CRUD completo en Cloud Firestore** sobre la colección `scanfit_entrenamientos`.
 
 ### Funcionalidades Principales
-- **Consultar (`getDocs`):** Visualización de los ejercicios y máquinas asignados a la rutina, filtrado dinámico por día de entrenamiento (*Todos*, *Día 1: Pecho y Tríceps*, *Día 2: Pierna y Hombro*, *Día 3: Espalda y Bíceps*, *Día 4: Pierna y Hombro*), panel de estadísticas y barra de progreso en tiempo real. Incluye además la opción de cargar la rutina base de 4 días de ScanFit con un clic cuando la base está vacía.
-- **Agregar (`addDoc`):** Formulario con validaciones de campos obligatorios y valores numéricos para registrar nuevos ejercicios o máquinas (nombre del ejercicio/máquina, día asignado, grupo muscular, series, repeticiones, peso en kg y nota técnica opcional).
-- **Modificar (`updateDoc`):**
+- **Consultar:** Visualización de los ejercicios y máquinas asignados a la rutina, filtrado dinámico por día de entrenamiento (*Todos*, *Día 1: Pecho y Tríceps*, *Día 2: Pierna y Hombro*, *Día 3: Espalda y Bíceps*, *Día 4: Pierna y Hombro*), panel de estadísticas y barra de progreso en tiempo real. Incluye además la opción de cargar la rutina base de 4 días de ScanFit con un clic cuando la base está vacía.
+- **Agregar:** Formulario con validaciones de campos obligatorios y valores numéricos para registrar nuevos ejercicios o máquinas (nombre del ejercicio/máquina, día asignado, grupo muscular, series, repeticiones, peso en kg y nota técnica opcional).
+- **Modificar:**
   - Cambio rápido de estado entre **Pendiente** y **Completado** con un clic.
   - Edición completa de los datos de cualquier ejercicio (nombre, día, grupo muscular, series, repeticiones, peso en kg y nota técnica) a través de un modal de edición validado.
-- **Eliminar (`deleteDoc`):** Borrado de ejercicios con confirmación y actualización inmediata tras confirmarse la operación en Firestore.
-- **Experiencia de Uso y Seguridad:** Autenticación anónima automática con Firebase Authentication (`signInAnonymously`), estados de carga (`loading`), alertas claras de éxito o error real ante cada operación en Firestore y diseño *responsive* adaptable a dispositivos móviles y escritorio.
+- **Eliminar:** Borrado de ejercicios con confirmación y actualización inmediata tras confirmarse la operación en Firestore.
+- **Experiencia de Uso y Seguridad:** Autenticación anónima automática, estados de carga, alertas claras de éxito o error real ante cada operación y diseño *responsive* adaptable a dispositivos móviles y escritorio.
 
 ---
 
@@ -65,37 +61,3 @@ scanfit-mi-plan-entrenamiento/
 ```
 
 ---
-
-## 4. Requisitos e Instalación Local
-
-1. **Clonar el repositorio o descomprimir el proyecto** y abrir la carpeta en Visual Studio Code.
-2. **Instalar las dependencias:**
-   ```bash
-   npm install
-   ```
-3. **Configurar las variables de entorno:**
-   Crear un archivo llamado `.env` en la raíz del proyecto (junto a `package.json`) tomando como base `.env.example`:
-   ```env
-   VITE_FIREBASE_API_KEY=tu_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=tu_proyecto.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=tu_project_id
-   VITE_FIREBASE_APP_ID=tu_app_id
-   ```
-4. **Configurar Firebase Console:**
-   - Habilitar **Authentication → Sign-in method → Anonymous (Anónimo)**.
-   - Crear la base de datos **Cloud Firestore** y publicar las reglas incluidas en el archivo `firestore.rules`.
-5. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   ```
-6. Abrir la URL local indicada en la terminal (por defecto `http://localhost:5173`).
-
----
-
-## 5. Despliegue en Vercel
-
-1. Subir el proyecto a un repositorio en **GitHub** (verificando que `.env` no se incluya gracias a `.gitignore`).
-2. Importar el repositorio en [Vercel](https://vercel.com/).
-3. Verificar que el *Framework Preset* sea **Vite**, el comando de build `npm run build` y el directorio de salida `dist`.
-4. En **Settings → Environment Variables**, cargar las 4 variables (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`).
-5. Ejecutar **Deploy** (o **Redeploy** si se agregaron variables posteriormente).
