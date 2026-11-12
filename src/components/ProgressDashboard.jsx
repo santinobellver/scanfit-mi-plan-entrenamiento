@@ -1,108 +1,76 @@
 import React from 'react';
-import { DIAS_ENTRENAMIENTO } from '../services/workoutService';
 
-function ProgressDashboard({
-  ejercicios,
-  diaSeleccionado,
-  onSelectDia,
-  ejerciciosFiltrados,
-}) {
-  const totalGlobal = ejercicios.length;
-  const completadosGlobal = ejercicios.filter((e) => e.estado === 'Completado').length;
-  const porcentajeGlobal =
-    totalGlobal > 0 ? Math.round((completadosGlobal / totalGlobal) * 100) : 0;
-
-  const totalDia = ejerciciosFiltrados.length;
-  const completadosDia = ejerciciosFiltrados.filter(
-    (e) => e.estado === 'Completado'
-  ).length;
-  const pendientesDia = totalDia - completadosDia;
-  const porcentajeDia =
-    totalDia > 0 ? Math.round((completadosDia / totalDia) * 100) : 0;
-
-  const filtros = ['Todos', ...DIAS_ENTRENAMIENTO];
+const ProgressDashboard = ({ exercises, userProfile, onOpenQuestionnaire }) => {
+  const total = exercises.length;
+  const completados = exercises.filter((e) => e.estado === 'Completado').length;
+  const pendientes = total - completados;
+  const porcentaje = total > 0 ? Math.round((completados / total) * 100) : 0;
 
   return (
-    <section className="sf-dashboard" aria-label="Progreso y filtros del plan">
+    <section className="sf-dashboard" aria-label="Resumen de tu plan personalizado">
+      {userProfile && (
+        <div className="sf-profile-banner">
+          <div className="sf-profile-summary">
+            <span className="sf-profile-badge">TU PLAN PERSONALIZADO</span>
+            <h2 className="sf-profile-headline">
+              Objetivo: <strong>{userProfile.objetivo}</strong> •{' '}
+              <span>
+                {userProfile.frecuenciaDias}{' '}
+                {Number(userProfile.frecuenciaDias) === 1 ? 'día por semana' : 'días por semana'}
+              </span>
+            </h2>
+            <p className="sf-profile-meta">
+              Perfil configurado: {userProfile.genero} • {userProfile.edad} años • {userProfile.pesoKg} kg •{' '}
+              {userProfile.alturaCm} cm
+            </p>
+          </div>
+          <button
+            type="button"
+            className="sf-btn sf-btn-outline"
+            onClick={onOpenQuestionnaire}
+          >
+            Rehacer cuestionario
+          </button>
+        </div>
+      )}
+
       <div className="sf-stats-grid">
-        <div className="sf-stat-card sf-stat-primary">
-          <div className="sf-stat-header">
-            <span className="sf-stat-label">
-              {diaSeleccionado === 'Todos'
-                ? 'PROGRESO TOTAL DE LA RUTINA'
-                : `PROGRESO — ${diaSeleccionado.toUpperCase()}`}
-            </span>
-            <span className="sf-stat-percentage">
-              {diaSeleccionado === 'Todos' ? porcentajeGlobal : porcentajeDia}%
+        <article className="sf-stat-card">
+          <span className="sf-stat-label">Avance de la Rutina</span>
+          <div className="sf-stat-value-row">
+            <strong className="sf-stat-number sf-text-green">{porcentaje}%</strong>
+            <span className="sf-stat-sub">
+              {completados} de {total} ejercicios
             </span>
           </div>
-
-          <div
-            className="sf-progress-track"
-            role="progressbar"
-            aria-valuenow={diaSeleccionado === 'Todos' ? porcentajeGlobal : porcentajeDia}
-            aria-valuemin="0"
-            aria-valuemax="100"
-          >
+          <div className="sf-progress-bar-bg" aria-hidden="true">
             <div
-              className="sf-progress-fill"
-              style={{
-                width: `${diaSeleccionado === 'Todos' ? porcentajeGlobal : porcentajeDia}%`,
-              }}
+              className="sf-progress-bar-fill"
+              style={{ width: `${porcentaje}%` }}
             />
           </div>
+        </article>
 
-          <p className="sf-stat-caption">
-            {totalDia === 0
-              ? 'Todavía no hay ejercicios registrados en esta vista.'
-              : `${completadosDia} de ${totalDia} ejercicios completados (${pendientesDia} pendientes)`}
-          </p>
-        </div>
-
-        <div className="sf-kpi-row">
-          <div className="sf-kpi-box">
-            <span className="sf-kpi-number">{totalDia}</span>
-            <span className="sf-kpi-title">Asignados</span>
+        <article className="sf-stat-card">
+          <span className="sf-stat-label">Ejercicios Completados</span>
+          <div className="sf-stat-value-row">
+            <strong className="sf-stat-number">{completados}</strong>
+            <span className="sf-stat-chip is-done">Realizados</span>
           </div>
-          <div className="sf-kpi-box sf-kpi-completed">
-            <span className="sf-kpi-number">{completadosDia}</span>
-            <span className="sf-kpi-title">Completados</span>
-          </div>
-          <div className="sf-kpi-box sf-kpi-pending">
-            <span className="sf-kpi-number">{pendientesDia}</span>
-            <span className="sf-kpi-title">Pendientes</span>
-          </div>
-        </div>
-      </div>
+          <p className="sf-stat-helper">Marcá cada máquina a medida que terminás tus series.</p>
+        </article>
 
-      <div className="sf-filter-bar">
-        <span className="sf-filter-label">Filtrar por día de entrenamiento:</span>
-        <div className="sf-filter-pills" role="tablist">
-          {filtros.map((dia) => {
-            const activo = diaSeleccionado === dia;
-            const cantidadPorDia =
-              dia === 'Todos'
-                ? ejercicios.length
-                : ejercicios.filter((item) => item.dia === dia).length;
-
-            return (
-              <button
-                key={dia}
-                type="button"
-                role="tab"
-                aria-selected={activo}
-                className={`sf-filter-pill ${activo ? 'sf-filter-pill-active' : ''}`}
-                onClick={() => onSelectDia(dia)}
-              >
-                <span>{dia}</span>
-                <span className="sf-pill-count">{cantidadPorDia}</span>
-              </button>
-            );
-          })}
-        </div>
+        <article className="sf-stat-card">
+          <span className="sf-stat-label">Ejercicios Pendientes</span>
+          <div className="sf-stat-value-row">
+            <strong className="sf-stat-number">{pendientes}</strong>
+            <span className="sf-stat-chip is-pending">Por entrenar</span>
+          </div>
+          <p className="sf-stat-helper">Adaptados a tu peso y frecuencia semanal.</p>
+        </article>
       </div>
     </section>
   );
-}
+};
 
 export default ProgressDashboard;

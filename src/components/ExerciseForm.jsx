@@ -1,244 +1,201 @@
 import React, { useState } from 'react';
-import { DIAS_ENTRENAMIENTO, GRUPOS_MUSCULARES } from '../services/workoutService';
 
-const ESTADO_INICIAL = {
-  nombre: '',
-  dia: DIAS_ENTRENAMIENTO[0],
-  grupoMuscular: GRUPOS_MUSCULARES[0],
-  series: '',
-  repeticiones: '',
-  pesoKg: '',
-  notaTecnica: '',
-};
+const GRUPOS_MUSCULARES = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core', 'Cardio'];
 
-function ExerciseForm({ onAgregarEjercicio, guardando }) {
-  const [formData, setFormData] = useState(ESTADO_INICIAL);
-  const [errores, setErrores] = useState({});
-
-  const validarFormulario = () => {
-    const nuevosErrores = {};
-
-    if (!formData.nombre.trim()) {
-      nuevosErrores.nombre = 'Ingresá el nombre del ejercicio o máquina.';
-    } else if (formData.nombre.trim().length < 3) {
-      nuevosErrores.nombre = 'El nombre debe tener al menos 3 caracteres.';
-    }
-
-    const seriesNum = Number(formData.series);
-    if (formData.series === '' || Number.isNaN(seriesNum) || !Number.isInteger(seriesNum)) {
-      nuevosErrores.series = 'Ingresá un número entero de series.';
-    } else if (seriesNum < 1 || seriesNum > 20) {
-      nuevosErrores.series = 'Las series deben estar entre 1 y 20.';
-    }
-
-    const repsNum = Number(formData.repeticiones);
-    if (
-      formData.repeticiones === '' ||
-      Number.isNaN(repsNum) ||
-      !Number.isInteger(repsNum)
-    ) {
-      nuevosErrores.repeticiones = 'Ingresá un número entero de repeticiones.';
-    } else if (repsNum < 1 || repsNum > 100) {
-      nuevosErrores.repeticiones = 'Las repeticiones deben estar entre 1 y 100.';
-    }
-
-    const pesoNum = Number(formData.pesoKg);
-    if (formData.pesoKg === '' || Number.isNaN(pesoNum)) {
-      nuevosErrores.pesoKg = 'Ingresá el peso en kg (usá 0 si es peso corporal).';
-    } else if (pesoNum < 0 || pesoNum > 500) {
-      nuevosErrores.pesoKg = 'El peso debe estar entre 0 y 500 kg.';
-    }
-
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    if (errores[name]) {
-      setErrores((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
+const ExerciseForm = ({ availableDays, activeDay, onAddExercise, isSubmitting }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [nombre, setNombre] = useState('');
+  const [maquina, setMaquina] = useState('');
+  const [grupoMuscular, setGrupoMuscular] = useState('Pecho');
+  const [dia, setDia] = useState(activeDay !== 'Todos' ? activeDay : availableDays[0] || 'Día 1');
+  const [series, setSeries] = useState(4);
+  const [repeticiones, setRepeticiones] = useState('10 a 12 reps');
+  const [pesoKg, setPesoKg] = useState(25);
+  const [descansoSeg, setDescansoSeg] = useState(60);
+  const [notas, setNotas] = useState('');
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validarFormulario()) return;
+    setFormError('');
 
-    const exito = await onAgregarEjercicio(formData);
-    if (exito) {
-      setFormData((prev) => ({
-        ...ESTADO_INICIAL,
-        dia: prev.dia,
-        grupoMuscular: prev.grupoMuscular,
-      }));
-      setErrores({});
+    if (!nombre.trim() || !maquina.trim()) {
+      setFormError('Completá el nombre del ejercicio y la máquina correspondiente.');
+      return;
     }
+
+    await onAddExercise({
+      nombre,
+      maquina,
+      grupoMuscular,
+      dia,
+      series: Number(series),
+      repeticiones,
+      pesoKg: Number(pesoKg),
+      descansoSeg: Number(descansoSeg),
+      notas,
+    });
+
+    setNombre('');
+    setMaquina('');
+    setNotas('');
+    setIsOpen(false);
   };
 
   return (
-    <aside className="sf-form-card" aria-labelledby="form-heading">
-      <div className="sf-form-header">
-        <span className="sf-form-tag">NUEVO REGISTRO</span>
-        <h2 id="form-heading" className="sf-form-title">
-          Agregar Ejercicio o Máquina
-        </h2>
-        <p className="sf-form-desc">
-          Sumá una máquina o ejercicio a tu plan semanal en Cloud Firestore.
-        </p>
+    <section className="sf-form-section">
+      <div className="sf-form-toggle-bar">
+        <div>
+          <h3 className="sf-section-title">¿Querés sumar una máquina extra a tu plan?</h3>
+          <p className="sf-section-subtitle">
+            Podés agregar ejercicios personalizados a cualquiera de tus días de entrenamiento.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="sf-btn sf-btn-primary"
+          onClick={() => setIsOpen((prev) => !prev)}
+        >
+          {isOpen ? 'Cerrar formulario' : '+ Agregar Ejercicio Manual'}
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="sf-form">
-        <div className="sf-field">
-          <label htmlFor="nombre" className="sf-label">
-            Nombre del ejercicio / máquina *
-          </label>
-          <input
-            id="nombre"
-            name="nombre"
-            type="text"
-            className={`sf-input ${errores.nombre ? 'sf-input-error' : ''}`}
-            placeholder="Ej: Press banca con barra / Peck-Deck"
-            value={formData.nombre}
-            onChange={handleChange}
-            disabled={guardando}
-          />
-          {errores.nombre && <span className="sf-error-text">{errores.nombre}</span>}
-        </div>
+      {isOpen && (
+        <form onSubmit={handleSubmit} className="sf-exercise-form">
+          {formError && <p className="sf-form-error">{formError}</p>}
 
-        <div className="sf-field">
-          <label htmlFor="dia" className="sf-label">
-            Día de entrenamiento asignado *
-          </label>
-          <select
-            id="dia"
-            name="dia"
-            className="sf-select"
-            value={formData.dia}
-            onChange={handleChange}
-            disabled={guardando}
-          >
-            {DIAS_ENTRENAMIENTO.map((dia) => (
-              <option key={dia} value={dia}>
-                {dia}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className="sf-form-grid">
+            <div className="sf-input-group">
+              <label className="sf-field-label">Nombre del Ejercicio *</label>
+              <input
+                type="text"
+                className="sf-input"
+                placeholder="Ej: Prensa de piernas 45°"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                required
+              />
+            </div>
 
-        <div className="sf-field">
-          <label htmlFor="grupoMuscular" className="sf-label">
-            Grupo muscular *
-          </label>
-          <select
-            id="grupoMuscular"
-            name="grupoMuscular"
-            className="sf-select"
-            value={formData.grupoMuscular}
-            onChange={handleChange}
-            disabled={guardando}
-          >
-            {GRUPOS_MUSCULARES.map((grupo) => (
-              <option key={grupo} value={grupo}>
-                {grupo}
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="sf-input-group">
+              <label className="sf-field-label">Máquina o Estación *</label>
+              <input
+                type="text"
+                className="sf-input"
+                placeholder="Ej: Máquina #10 Sector Piernas"
+                value={maquina}
+                onChange={(e) => setMaquina(e.target.value)}
+                required
+              />
+            </div>
 
-        <div className="sf-metrics-row">
-          <div className="sf-field">
-            <label htmlFor="series" className="sf-label">
-              Series *
-            </label>
-            <input
-              id="series"
-              name="series"
-              type="number"
-              min="1"
-              max="20"
-              placeholder="Ej: 4"
-              className={`sf-input ${errores.series ? 'sf-input-error' : ''}`}
-              value={formData.series}
-              onChange={handleChange}
-              disabled={guardando}
-            />
-            {errores.series && <span className="sf-error-text">{errores.series}</span>}
+            <div className="sf-input-group">
+              <label className="sf-field-label">Día de tu Plan</label>
+              <select
+                className="sf-input"
+                value={dia}
+                onChange={(e) => setDia(e.target.value)}
+              >
+                {availableDays.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sf-input-group">
+              <label className="sf-field-label">Grupo Muscular</label>
+              <select
+                className="sf-input"
+                value={grupoMuscular}
+                onChange={(e) => setGrupoMuscular(e.target.value)}
+              >
+                {GRUPOS_MUSCULARES.map((grupo) => (
+                  <option key={grupo} value={grupo}>
+                    {grupo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sf-input-group">
+              <label className="sf-field-label">Series</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                className="sf-input"
+                value={series}
+                onChange={(e) => setSeries(e.target.value)}
+              />
+            </div>
+
+            <div className="sf-input-group">
+              <label className="sf-field-label">Repeticiones</label>
+              <input
+                type="text"
+                className="sf-input"
+                placeholder="Ej: 10 a 12 reps"
+                value={repeticiones}
+                onChange={(e) => setRepeticiones(e.target.value)}
+              />
+            </div>
+
+            <div className="sf-input-group">
+              <label className="sf-field-label">Peso Sugerido (KG)</label>
+              <input
+                type="number"
+                min="0"
+                max="400"
+                step="2.5"
+                className="sf-input"
+                value={pesoKg}
+                onChange={(e) => setPesoKg(e.target.value)}
+              />
+            </div>
+
+            <div className="sf-input-group">
+              <label className="sf-field-label">Descanso (Segundos)</label>
+              <input
+                type="number"
+                min="15"
+                max="300"
+                step="5"
+                className="sf-input"
+                value={descansoSeg}
+                onChange={(e) => setDescansoSeg(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="sf-field">
-            <label htmlFor="repeticiones" className="sf-label">
-              Reps *
-            </label>
+          <div className="sf-input-group" style={{ marginTop: '12px' }}>
+            <label className="sf-field-label">Consejo postural / Notas de uso</label>
             <input
-              id="repeticiones"
-              name="repeticiones"
-              type="number"
-              min="1"
-              max="100"
-              placeholder="Ej: 12"
-              className={`sf-input ${errores.repeticiones ? 'sf-input-error' : ''}`}
-              value={formData.repeticiones}
-              onChange={handleChange}
-              disabled={guardando}
+              type="text"
+              className="sf-input"
+              placeholder="Ej: Mantener la espalda apoyada y controlar el descenso"
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
             />
-            {errores.repeticiones && (
-              <span className="sf-error-text">{errores.repeticiones}</span>
-            )}
           </div>
 
-          <div className="sf-field">
-            <label htmlFor="pesoKg" className="sf-label">
-              Peso (kg) *
-            </label>
-            <input
-              id="pesoKg"
-              name="pesoKg"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="Ej: 35"
-              className={`sf-input ${errores.pesoKg ? 'sf-input-error' : ''}`}
-              value={formData.pesoKg}
-              onChange={handleChange}
-              disabled={guardando}
-            />
-            {errores.pesoKg && <span className="sf-error-text">{errores.pesoKg}</span>}
+          <div className="sf-form-actions">
+            <button
+              type="button"
+              className="sf-btn sf-btn-secondary"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="sf-btn sf-btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Guardando...' : 'Guardar en Mi Plan'}
+            </button>
           </div>
-        </div>
-
-        <div className="sf-field">
-          <label htmlFor="notaTecnica" className="sf-label">
-            Nota técnica / consejo de uso de máquina (opcional)
-          </label>
-          <textarea
-            id="notaTecnica"
-            name="notaTecnica"
-            rows="3"
-            className="sf-textarea"
-            placeholder="Ej: Ajustar el respaldo en posición 3 y mantener los codos pegados al cuerpo..."
-            value={formData.notaTecnica}
-            onChange={handleChange}
-            disabled={guardando}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="sf-btn sf-btn-primary sf-btn-full"
-          disabled={guardando}
-        >
-          {guardando ? 'Guardando en Firestore...' : '+ Registrar en Mi Plan'}
-        </button>
-      </form>
-    </aside>
+        </form>
+      )}
+    </section>
   );
-}
+};
 
 export default ExerciseForm;

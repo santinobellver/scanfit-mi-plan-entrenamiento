@@ -1,54 +1,67 @@
-:root {
-  /* Paleta Oficial Obligatoria de ScanFit */
-  --sf-green: #7DAD3D;
+/* Paleta oficial ScanFit + Variables dinámicas para Modo Claro y Modo Oscuro */
+:root,
+[data-theme='light'] {
+  --sf-green: #7dad3d;
   --sf-green-hover: #6c9832;
   --sf-green-soft: rgba(125, 173, 61, 0.14);
-  --sf-navy: #141B34;
-  --sf-navy-light: #1d2647;
+  --sf-navy: #141b34;
   --sf-slate: #324651;
-  --sf-white: #FFFFFF;
-  --sf-bg-light: #F4F7F5;
-  --sf-border: #DCE3E6;
-  --sf-danger: #D9383A;
-  --sf-danger-soft: rgba(217, 56, 58, 0.1);
+  --sf-white: #ffffff;
 
-  /* Tipografía Oficial: Montserrat */
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: var(--sf-navy);
-  background-color: var(--sf-bg-light);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+  /* Superficies Modo Claro (reducido en brillo puro para cuidar la vista) */
+  --sf-bg-page: #f2f5f7;
+  --sf-bg-surface: #ffffff;
+  --sf-bg-elevated: #e8eef1;
+  --sf-bg-input: #f8fafb;
+  --sf-text-primary: #141b34;
+  --sf-text-secondary: #324651;
+  --sf-text-muted: #5a6f7c;
+  --sf-border: #d5e0e5;
+  --sf-shadow: 0 8px 24px rgba(20, 27, 52, 0.07);
 }
 
-*,
-*::before,
-*::after {
+[data-theme='dark'] {
+  --sf-green: #7dad3d;
+  --sf-green-hover: #8ec04b;
+  --sf-green-soft: rgba(125, 173, 61, 0.2);
+  --sf-navy: #141b34;
+  --sf-slate: #324651;
+  --sf-white: #ffffff;
+
+  /* Superficies Modo Oscuro (descanso visual profundo con azul oscuro y gris ScanFit) */
+  --sf-bg-page: #10162b;
+  --sf-bg-surface: #18213d;
+  --sf-bg-elevated: #23314c;
+  --sf-bg-input: #141b34;
+  --sf-text-primary: #ffffff;
+  --sf-text-secondary: #d4e0e7;
+  --sf-text-muted: #9cb0bc;
+  --sf-border: #2e4052;
+  --sf-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--sf-bg-page);
+  color: var(--sf-text-primary);
+  line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
   min-height: 100vh;
-  background-color: var(--sf-bg-light);
-  color: var(--sf-navy);
-  font-family: 'Montserrat', sans-serif;
 }
 
 button,
 input,
 select,
 textarea {
-  font-family: 'Montserrat', sans-serif;
-}
-
-code {
-  font-family: 'Courier New', Courier, monospace;
-  background: rgba(20, 27, 52, 0.08);
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  font-size: 0.9em;
+  font-family: inherit;
 }

@@ -1,57 +1,77 @@
 import React from 'react';
 
-function Header({ usuarioAuth, onRecargar, cargando }) {
+const Header = ({ theme, onToggleTheme, userProfile, onOpenQuestionnaire }) => {
+  const isDark = theme === 'dark';
+
   return (
     <header className="sf-header">
-      <div className="sf-container sf-header-inner">
+      <div className="sf-header-container">
         <div className="sf-brand">
           <div className="sf-logo-badge" aria-hidden="true">
-            <svg viewBox="0 0 120 120" className="sf-logo-svg">
-              <rect x="10" y="42" width="10" height="36" rx="4" fill="#FFFFFF" />
-              <rect x="23" y="32" width="11" height="56" rx="4" fill="#7DAD3D" />
-              <rect x="86" y="32" width="11" height="56" rx="4" fill="#7DAD3D" />
-              <rect x="100" y="42" width="10" height="36" rx="4" fill="#FFFFFF" />
-              <rect x="34" y="55" width="52" height="10" fill="#324651" />
-              <circle cx="60" cy="60" r="22" fill="#141B34" stroke="#FFFFFF" strokeWidth="5" />
-              <circle cx="60" cy="60" r="11" fill="#7DAD3D" />
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6.5 6.5L4 9L6.5 11.5M17.5 6.5L20 9L17.5 11.5M9 4L15 20"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
           <div>
-            <div className="sf-brand-top">
-              <span className="sf-brand-name">SCANFIT</span>
-              <span className="sf-module-pill">Mi Plan de Entrenamiento</span>
+            <div className="sf-brand-title-row">
+              <h1 className="sf-brand-title">ScanFit</h1>
+              <span className="sf-version-pill">Mi Plan Personalizado</span>
             </div>
             <p className="sf-brand-subtitle">
-              Gestión interactiva de máquinas, cargas y progreso semanal en el gimnasio
+              Asesor inteligente de entrenamiento y uso de máquinas en el gimnasio
             </p>
           </div>
         </div>
 
         <div className="sf-header-actions">
-          <div className="sf-auth-status" title="Estado de conexión con Firebase">
-            <span
-              className={`sf-status-dot ${usuarioAuth ? 'sf-dot-online' : 'sf-dot-pending'}`}
-            />
-            <span className="sf-auth-text">
-              {usuarioAuth
-                ? `Firestore Activo (ID: ${usuarioAuth.uid.slice(0, 6)}...)`
-                : 'Conectando a Firebase...'}
-            </span>
-          </div>
+          {userProfile && (
+            <button
+              type="button"
+              className="sf-reconfigure-btn"
+              onClick={onOpenQuestionnaire}
+              title="Modificar tus datos, objetivo o días de entrenamiento"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <span>Ajustar Mi Perfil / Objetivo</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            className="sf-btn sf-btn-outline-light"
-            onClick={onRecargar}
-            disabled={cargando}
-            title="Volver a consultar los documentos desde Cloud Firestore"
-          >
-            {cargando ? 'Sincronizando...' : 'Sincronizar Datos'}
-          </button>
+          <div className="sf-theme-switch-wrapper">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isDark}
+              onClick={onToggleTheme}
+              className={`sf-theme-switch ${isDark ? 'is-dark' : 'is-light'}`}
+              aria-label="Cambiar entre modo claro y modo oscuro"
+            >
+              <span className="sf-theme-switch-track">
+                <span className="sf-theme-icon sf-icon-sun" aria-hidden="true">
+                  ☀️
+                </span>
+                <span className="sf-theme-icon sf-icon-moon" aria-hidden="true">
+                  🌙
+                </span>
+                <span className="sf-theme-switch-thumb" />
+              </span>
+              <span className="sf-theme-switch-label">
+                {isDark ? 'Modo Oscuro' : 'Modo Claro'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
   );
-}
+};
 
 export default Header;

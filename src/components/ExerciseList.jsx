@@ -1,89 +1,78 @@
 import React from 'react';
 import ExerciseCard from './ExerciseCard';
 
-function ExerciseList({
-  ejercicios,
-  diaSeleccionado,
-  cargando,
-  procesandoId,
-  onToggleEstado,
-  onAbrirEdicion,
-  onEliminar,
-  onCargarRutinaBase,
-  totalGlobal,
-}) {
-  if (cargando) {
-    return (
-      <div className="sf-state-box" role="status">
-        <div className="sf-spinner" aria-hidden="true" />
-        <h3 className="sf-state-title">Cargando tu plan desde Cloud Firestore...</h3>
-        <p className="sf-state-text">
-          Consultando los documentos de la colección <code>scanfit_entrenamientos</code>.
-        </p>
-      </div>
-    );
-  }
-
-  if (ejercicios.length === 0) {
-    return (
-      <div className="sf-state-box sf-empty-state">
-        <div className="sf-empty-icon" aria-hidden="true">
-          🏋️‍♂️
-        </div>
-        <h3 className="sf-state-title">
-          {totalGlobal === 0
-            ? 'Tu rutina de entrenamiento está vacía'
-            : `No hay ejercicios asignados para "${diaSeleccionado}"`}
-        </h3>
-        <p className="sf-state-text">
-          {totalGlobal === 0
-            ? 'Podés registrar tu primer ejercicio desde el formulario o cargar la rutina inicial de 4 días de ScanFit para empezar a entrenar con guía técnica.'
-            : 'Usá el formulario para agregar un ejercicio a este día o seleccioná "Todos" en el filtro superior.'}
-        </p>
-        {totalGlobal === 0 && (
+const ExerciseList = ({
+  exercises,
+  availableDays,
+  activeDay,
+  onSelectDay,
+  statusFilter,
+  onSelectStatusFilter,
+  onToggleStatus,
+  onEdit,
+  onDelete,
+}) => {
+  return (
+    <section className="sf-list-section" aria-label="Ejercicios de tu rutina">
+      <div className="sf-filters-bar">
+        <div className="sf-day-tabs" role="tablist" aria-label="Filtrar por día de entrenamiento">
           <button
             type="button"
-            className="sf-btn sf-btn-primary"
-            onClick={onCargarRutinaBase}
-            disabled={procesandoId === 'seed'}
+            role="tab"
+            aria-selected={activeDay === 'Todos'}
+            className={`sf-day-tab ${activeDay === 'Todos' ? 'is-active' : ''}`}
+            onClick={() => onSelectDay('Todos')}
           >
-            {procesandoId === 'seed'
-              ? 'Cargando rutina en Firestore...'
-              : '⚡ Cargar Rutina Sugerida ScanFit (4 Días)'}
+            Todos los días
           </button>
-        )}
-      </div>
-    );
-  }
+          {availableDays.map((dia) => (
+            <button
+              key={dia}
+              type="button"
+              role="tab"
+              aria-selected={activeDay === dia}
+              className={`sf-day-tab ${activeDay === dia ? 'is-active' : ''}`}
+              onClick={() => onSelectDay(dia)}
+            >
+              {dia}
+            </button>
+          ))}
+        </div>
 
-  return (
-    <div className="sf-list-wrapper">
-      <div className="sf-list-header">
-        <h2 className="sf-section-title">
-          {diaSeleccionado === 'Todos'
-            ? 'Todos los Ejercicios de la Rutina'
-            : diaSeleccionado}
-        </h2>
-        <span className="sf-list-counter">
-          {ejercicios.length}{' '}
-          {ejercicios.length === 1 ? 'ejercicio registrado' : 'ejercicios registrados'}
-        </span>
+        <div className="sf-status-filter">
+          {['Todos', 'Pendiente', 'Completado'].map((estado) => (
+            <button
+              key={estado}
+              type="button"
+              className={`sf-filter-chip ${statusFilter === estado ? 'is-active' : ''}`}
+              onClick={() => onSelectStatusFilter(estado)}
+            >
+              {estado === 'Todos' ? 'Todos' : estado === 'Pendiente' ? 'Pendientes' : 'Completados'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="sf-cards-grid">
-        {ejercicios.map((ejercicio) => (
-          <ExerciseCard
-            key={ejercicio.id}
-            ejercicio={ejercicio}
-            onToggleEstado={onToggleEstado}
-            onAbrirEdicion={onAbrirEdicion}
-            onEliminar={onEliminar}
-            procesandoId={procesandoId}
-          />
-        ))}
-      </div>
-    </div>
+      {exercises.length === 0 ? (
+        <div className="sf-empty-state">
+          <h3>No hay ejercicios en esta vista</h3>
+          <p>Probá cambiando el filtro de día o agregá un ejercicio nuevo a tu rutina.</p>
+        </div>
+      ) : (
+        <div className="sf-exercises-grid">
+          {exercises.map((exercise) => (
+            <ExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              onToggleStatus={onToggleStatus}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
-}
+};
 
 export default ExerciseList;

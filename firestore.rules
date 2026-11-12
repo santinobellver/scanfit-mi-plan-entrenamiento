@@ -2,42 +2,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Reglas para la colección única de ScanFit: scanfit_entrenamientos
-    // Requiere que el visitante esté autenticado mediante Firebase Authentication (incluyendo Anonymous Auth)
-    // y valida la estructura básica de los documentos al crear o actualizar.
-    match /scanfit_entrenamientos/{ejercicioId} {
-      allow read: if request.auth != null;
-
-      allow create: if request.auth != null
-        && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() > 0
-        && request.resource.data.dia is string
-        && request.resource.data.grupoMuscular is string
-        && request.resource.data.series is number
-        && request.resource.data.series > 0
-        && request.resource.data.repeticiones is number
-        && request.resource.data.repeticiones > 0
-        && request.resource.data.pesoKg is number
-        && request.resource.data.pesoKg >= 0
-        && request.resource.data.estado in ['Pendiente', 'Completado'];
-
-      allow update: if request.auth != null
-        && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() > 0
-        && request.resource.data.series is number
-        && request.resource.data.series > 0
-        && request.resource.data.repeticiones is number
-        && request.resource.data.repeticiones > 0
-        && request.resource.data.pesoKg is number
-        && request.resource.data.pesoKg >= 0
-        && request.resource.data.estado in ['Pendiente', 'Completado'];
-
-      allow delete: if request.auth != null;
-    }
-
-    // Bloquear por defecto cualquier otra colección
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }

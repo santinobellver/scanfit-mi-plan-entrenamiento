@@ -1,37 +1,19 @@
 import React from 'react';
 
-function FeedbackBanner({ feedback, onClose }) {
-  if (!feedback || !feedback.mensaje) return null;
-
-  const esError = feedback.tipo === 'error';
-  const esInfo = feedback.tipo === 'info';
+const FeedbackBanner = ({ feedback, onClose }) => {
+  if (!feedback || !feedback.message) return null;
 
   return (
     <div
-      className={`sf-feedback-banner ${
-        esError ? 'sf-feedback-error' : esInfo ? 'sf-feedback-info' : 'sf-feedback-success'
-      }`}
+      className={`sf-feedback-banner ${feedback.type === 'error' ? 'is-error' : 'is-success'}`}
       role="status"
-      aria-live="polite"
     >
-      <div className="sf-feedback-content">
-        <span className="sf-feedback-icon" aria-hidden="true">
-          {esError ? '⚠️' : esInfo ? 'ℹ️' : '✅'}
-        </span>
-        <p className="sf-feedback-message">{feedback.mensaje}</p>
-      </div>
-      {onClose && (
-        <button
-          type="button"
-          className="sf-feedback-close"
-          onClick={onClose}
-          aria-label="Cerrar mensaje"
-        >
-          ✕
-        </button>
-      )}
+      <span>{feedback.message}</span>
+      <button type="button" className="sf-feedback-close" onClick={onClose} aria-label="Cerrar aviso">
+        ✕
+      </button>
     </div>
   );
-}
+};
 
 export default FeedbackBanner;

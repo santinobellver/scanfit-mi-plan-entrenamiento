@@ -1,272 +1,254 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { ensureUserSession } from './firebase/config';
+import {
+  fetchUserProfile,
+  fetchExercises,
+  saveProfileAndGenerateRoutine,
+  createExercise,
+  updateExercise,
+  removeExercise,
+} from './services/workoutService';
 import Header from './components/Header';
-import FeedbackBanner from './components/FeedbackBanner';
+import OnboardingQuestionnaire from './components/OnboardingQuestionnaire';
 import ProgressDashboard from './components/ProgressDashboard';
 import ExerciseForm from './components/ExerciseForm';
 import ExerciseList from './components/ExerciseList';
 import EditExerciseModal from './components/EditExerciseModal';
-import { ensureAnonymousSession, isFirebaseConfigured } from './firebase/config';
-import {
-  obtenerEjercicios,
-  agregarEjercicio,
-  cambiarEstadoEjercicio,
-  editarDatosEjercicio,
-  eliminarEjercicio,
-  cargarRutinaInicialScanFit,
-} from './services/workoutService';
+import FeedbackBanner from './components/FeedbackBanner';
 import './App.css';
 
 function App() {
-  const [usuarioAuth, setUsuarioAuth] = useState(null);
-  const [ejercicios, setEjercicios] = useState([]);
-  const [diaSeleccionado, setDiaSeleccionado] = useState('Todos');
-  const [cargandoInicial, setCargandoInicial] = useState(true);
-  const [guardandoNuevo, setGuardandoNuevo] = useState(false);
-  const [procesandoId, setProcesandoId] = useState(null);
-  const [ejercicioEnEdicion, setEjercicioEnEdicion] = useState(null);
-  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  // Tema visual: por defecto Modo Claro o el elegido previamente por el usuario
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('scanfit_theme_mode') || 'dark';
+  });
+
+  const [uid, setUid] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+
+  const [activeDay, setActiveDay] = useState('Día 1');
+  const [statusFilter, setStatusFilter] = useState('Todos');
+  const [editingExercise, setEditingExercise] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
-  const mostrarFeedback = (tipo, mensaje) => {
-    setFeedback({ tipo, mensaje });
-  };
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('scanfit_theme_mode', theme);
+  }, [theme]);
 
-  // Cargar documentos desde Cloud Firestore (getDocs)
-  const cargarDatosFirestore = useCallback(async (silencioso = false) => {
-    setCargandoInicial(true);
-    try {
-      const user = await ensureAnonymousSession();
-      setUsuarioAuth(user);
-      const datos = await obtenerEjercicios();
-      setEjercicios(datos);
-      if (silencioso) {
-        mostrarFeedback(
-          'success',
-          'Rutina sincronizada correctamente con Cloud Firestore.'
-        );
-      }
-    } catch (error) {
-      console.error('Error al conectar con Firestore:', error);
-      mostrarFeedback(
-        'error',
-        `Error al consultar Cloud Firestore: ${
-          error.message || 'Verificá tu conexión, las reglas de Firestore y el archivo .env.'
-        }`
-      );
-    } finally {
-      setCargandoInicial(false);
-    }
+  const showNotice = useCallback((message, type = 'success') => {
+    setFeedback({ message, type });
+    setTimeout(() => {
+      setFeedback((prev) => (prev?.message === message ? null : prev));
+    }, 4000);
   }, []);
 
   useEffect(() => {
-    cargarDatosFirestore(false);
-  }, [cargarDatosFirestore]);
+    let mounted = true;
 
-  // AGREGAR (addDoc): Solo actualiza la interfaz si Firestore confirma la escritura
-  const handleAgregarEjercicio = async (nuevoEjercicio) => {
-    setGuardandoNuevo(true);
-    setFeedback(null);
+    const inicializarApp = async () => {
+      setLoading(true);
+      try {
+        const user = await ensureUserSession();
+        if (!mounted) return;
+        setUid(user.uid);
+
+        const perfilGuardado = await fetchUserProfile(user.uid);
+        if (!mounted) return;
+
+        // Si el usuario todavía no completó la encuesta de la Versión 2, mostramos únicamente el cuestionario sin rutinas predefinidas
+        if (!perfilGuardado || !perfilGuardado.encuestaCompletada) {
+          setUserProfile(null);
+          setExercises([]);
+          setShowQuestionnaire(true);
+        } else {
+          setUserProfile(perfilGuardado);
+          const listaEjercicios = await fetchExercises(user.uid);
+          if (!mounted) return;
+          setExercises(listaEjercicios);
+          setShowQuestionnaire(false);
+        }
+      } catch {
+        if (mounted) {
+          setShowQuestionnaire(true);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    inicializarApp();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleCompleteQuestionnaire = async (datosEncuesta) => {
+    if (!uid) return;
+    setSubmitting(true);
     try {
-      const creado = await agregarEjercicio(nuevoEjercicio, usuarioAuth?.uid);
-      setEjercicios((prev) => [creado, ...prev]);
-      mostrarFeedback(
-        'success',
-        `¡"${creado.nombre}" fue registrado con éxito en tu plan (${creado.dia})!`
+      const { perfil, ejercicios } = await saveProfileAndGenerateRoutine(uid, datosEncuesta);
+      setUserProfile(perfil);
+      setExercises(ejercicios);
+      setActiveDay('Día 1');
+      setShowQuestionnaire(false);
+      showNotice(
+        `¡Listo! Generamos tu plan de ${perfil.frecuenciaDias} ${
+          perfil.frecuenciaDias === 1 ? 'día' : 'días'
+        } enfocado en ${perfil.objetivo}.`
       );
-      return true;
-    } catch (error) {
-      console.error('Error al agregar ejercicio:', error);
-      mostrarFeedback(
-        'error',
-        `No se pudo guardar el ejercicio en Firestore: ${error.message}`
-      );
-      return false;
+    } catch {
+      showNotice('No pudimos guardar tu rutina en este momento. Intentá nuevamente.', 'error');
     } finally {
-      setGuardandoNuevo(false);
+      setSubmitting(false);
     }
   };
 
-  // MODIFICAR ESTADO (updateDoc): Cambia entre Pendiente y Completado
-  const handleToggleEstado = async (ejercicio) => {
-    setProcesandoId(ejercicio.id);
-    setFeedback(null);
+  const handleAddExercise = async (exerciseData) => {
+    if (!uid) return;
+    setSubmitting(true);
     try {
-      const nuevoEstado = await cambiarEstadoEjercicio(
-        ejercicio.id,
-        ejercicio.estado
-      );
-      setEjercicios((prev) =>
+      const creado = await createExercise(uid, exerciseData);
+      setExercises((prev) => [...prev, creado]);
+      setActiveDay(creado.dia);
+      showNotice(`"${creado.nombre}" fue agregado a tu ${creado.dia}.`);
+    } catch {
+      showNotice('Ocurrió un inconveniente al agregar el ejercicio.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (exercise) => {
+    if (!uid) return;
+    const nuevoEstado = exercise.estado === 'Completado' ? 'Pendiente' : 'Completado';
+    try {
+      await updateExercise(uid, exercise.id, {
+        ...exercise,
+        estado: nuevoEstado,
+      });
+      setExercises((prev) =>
         prev.map((item) =>
-          item.id === ejercicio.id ? { ...item, estado: nuevoEstado } : item
+          item.id === exercise.id ? { ...item, estado: nuevoEstado } : item
         )
       );
-      mostrarFeedback(
-        'success',
-        `Estado de "${ejercicio.nombre}" actualizado a ${nuevoEstado} en Firestore.`
+      showNotice(
+        nuevoEstado === 'Completado'
+          ? `¡Excelente! Completaste "${exercise.nombre}".`
+          : `"${exercise.nombre}" volvió a estado pendiente.`
       );
-    } catch (error) {
-      console.error('Error al cambiar estado:', error);
-      mostrarFeedback(
-        'error',
-        `Error al actualizar el estado en Firestore: ${error.message}`
-      );
-    } finally {
-      setProcesandoId(null);
+    } catch {
+      showNotice('No se pudo actualizar el estado del ejercicio.', 'error');
     }
   };
 
-  // MODIFICAR DATOS (updateDoc): Edita nombre, series, repeticiones, peso, día y nota
-  const handleGuardarEdicion = async (id, datosActualizados) => {
-    setGuardandoEdicion(true);
-    setFeedback(null);
+  const handleSaveEdit = async (exerciseId, updatedData) => {
+    if (!uid) return;
     try {
-      const actualizado = await editarDatosEjercicio(id, datosActualizados);
-      setEjercicios((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...actualizado } : item))
+      await updateExercise(uid, exerciseId, updatedData);
+      setExercises((prev) =>
+        prev.map((item) => (item.id === exerciseId ? { ...item, ...updatedData } : item))
       );
-      setEjercicioEnEdicion(null);
-      mostrarFeedback(
-        'success',
-        `Los datos de "${actualizado.nombre}" se actualizaron correctamente en Firestore.`
-      );
-    } catch (error) {
-      console.error('Error al editar ejercicio:', error);
-      mostrarFeedback(
-        'error',
-        `No se pudieron guardar los cambios en Firestore: ${error.message}`
-      );
-    } finally {
-      setGuardandoEdicion(false);
+      setEditingExercise(null);
+      showNotice('Los cambios del ejercicio se guardaron correctamente.');
+    } catch {
+      showNotice('No se pudieron guardar los cambios.', 'error');
     }
   };
 
-  // ELIMINAR (deleteDoc): Borra el documento de Firestore y luego actualiza la lista
-  const handleEliminarEjercicio = async (ejercicio) => {
-    const confirmar = window.confirm(
-      `¿Estás seguro de que querés eliminar "${ejercicio.nombre}" (${ejercicio.dia}) de tu plan?`
-    );
-    if (!confirmar) return;
-
-    setProcesandoId(ejercicio.id);
-    setFeedback(null);
+  const handleDeleteExercise = async (exerciseId) => {
+    if (!uid) return;
     try {
-      await eliminarEjercicio(ejercicio.id);
-      setEjercicios((prev) => prev.filter((item) => item.id !== ejercicio.id));
-      mostrarFeedback(
-        'success',
-        `"${ejercicio.nombre}" fue eliminado permanentemente de Cloud Firestore.`
-      );
-    } catch (error) {
-      console.error('Error al eliminar ejercicio:', error);
-      mostrarFeedback(
-        'error',
-        `No se pudo eliminar el ejercicio de Firestore: ${error.message}`
-      );
-    } finally {
-      setProcesandoId(null);
+      await removeExercise(uid, exerciseId);
+      setExercises((prev) => prev.filter((item) => item.id !== exerciseId));
+      showNotice('El ejercicio fue quitado de tu plan.');
+    } catch {
+      showNotice('No se pudo quitar el ejercicio.', 'error');
     }
   };
 
-  // CARGAR RUTINA INICIAL DE SCANFIT
-  const handleCargarRutinaBase = async () => {
-    setProcesandoId('seed');
-    setFeedback(null);
-    try {
-      const creados = await cargarRutinaInicialScanFit(usuarioAuth?.uid);
-      setEjercicios(creados);
-      mostrarFeedback(
-        'success',
-        `Se cargaron los ${creados.length} ejercicios de la rutina base de ScanFit en Cloud Firestore.`
-      );
-    } catch (error) {
-      console.error('Error al cargar rutina base:', error);
-      mostrarFeedback(
-        'error',
-        `No se pudo cargar la rutina sugerida en Firestore: ${error.message}`
-      );
-    } finally {
-      setProcesandoId(null);
-    }
-  };
+  const availableDays = useMemo(() => {
+    const numDias = Number(userProfile?.frecuenciaDias) || 3;
+    const diasBase = Array.from({ length: numDias }, (_, i) => `Día ${i + 1}`);
+    const diasConEjercicios = exercises.map((e) => e.dia).filter(Boolean);
+    return Array.from(new Set([...diasBase, ...diasConEjercicios])).sort();
+  }, [userProfile, exercises]);
 
-  // Filtrado por día de entrenamiento
-  const ejerciciosFiltrados =
-    diaSeleccionado === 'Todos'
-      ? ejercicios
-      : ejercicios.filter((item) => item.dia === diaSeleccionado);
+  const filteredExercises = useMemo(() => {
+    return exercises.filter((item) => {
+      const coincideDia = activeDay === 'Todos' || item.dia === activeDay;
+      const coincideEstado = statusFilter === 'Todos' || item.estado === statusFilter;
+      return coincideDia && coincideEstado;
+    });
+  }, [exercises, activeDay, statusFilter]);
 
   return (
-    <div className="sf-app">
+    <div className="sf-app-shell">
       <Header
-        usuarioAuth={usuarioAuth}
-        onRecargar={() => cargarDatosFirestore(true)}
-        cargando={cargandoInicial}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        userProfile={userProfile}
+        onOpenQuestionnaire={() => setShowQuestionnaire(true)}
       />
 
-      <main className="sf-container sf-main">
-        {!isFirebaseConfigured && (
-          <div className="sf-config-warning" role="alert">
-            <h3>⚠️ Configuración de Firebase pendiente (.env)</h3>
-            <p>
-              Para conectar la aplicación con tu base de datos en tiempo real, creá un
-              archivo <code>.env</code> en la raíz del proyecto con tus credenciales de
-              Firebase (podés guiarte con <code>.env.example</code>) y reiniciá el
-              servidor con <code>npm run dev</code>.
-            </p>
+      <main className="sf-main-container">
+        <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
+
+        {loading ? (
+          <div className="sf-loading-box">
+            <div className="sf-spinner" aria-hidden="true" />
+            <p>Preparando tu espacio de entrenamiento ScanFit...</p>
           </div>
-        )}
-
-        <FeedbackBanner
-          feedback={feedback}
-          onClose={() => setFeedback(null)}
-        />
-
-        <ProgressDashboard
-          ejercicios={ejercicios}
-          diaSeleccionado={diaSeleccionado}
-          onSelectDia={setDiaSeleccionado}
-          ejerciciosFiltrados={ejerciciosFiltrados}
-        />
-
-        <div className="sf-workspace-grid">
-          <ExerciseForm
-            onAgregarEjercicio={handleAgregarEjercicio}
-            guardando={guardandoNuevo}
+        ) : showQuestionnaire || !userProfile ? (
+          <OnboardingQuestionnaire
+            initialProfile={userProfile}
+            onSubmit={handleCompleteQuestionnaire}
+            onCancel={userProfile ? () => setShowQuestionnaire(false) : null}
+            isSubmitting={submitting}
           />
-
-          <section className="sf-exercises-section" aria-label="Listado de ejercicios">
-            <ExerciseList
-              ejercicios={ejerciciosFiltrados}
-              diaSeleccionado={diaSeleccionado}
-              cargando={cargandoInicial}
-              procesandoId={procesandoId}
-              onToggleEstado={handleToggleEstado}
-              onAbrirEdicion={(ejercicio) => setEjercicioEnEdicion(ejercicio)}
-              onEliminar={handleEliminarEjercicio}
-              onCargarRutinaBase={handleCargarRutinaBase}
-              totalGlobal={ejercicios.length}
+        ) : (
+          <>
+            <ProgressDashboard
+              exercises={exercises}
+              userProfile={userProfile}
+              onOpenQuestionnaire={() => setShowQuestionnaire(true)}
             />
-          </section>
-        </div>
+
+            <ExerciseForm
+              availableDays={availableDays}
+              activeDay={activeDay}
+              onAddExercise={handleAddExercise}
+              isSubmitting={submitting}
+            />
+
+            <ExerciseList
+              exercises={filteredExercises}
+              availableDays={availableDays}
+              activeDay={activeDay}
+              onSelectDay={setActiveDay}
+              statusFilter={statusFilter}
+              onSelectStatusFilter={setStatusFilter}
+              onToggleStatus={handleToggleStatus}
+              onEdit={setEditingExercise}
+              onDelete={handleDeleteExercise}
+            />
+          </>
+        )}
       </main>
 
-      <footer className="sf-footer">
-        <div className="sf-container sf-footer-inner">
-          <p>
-            <strong>ScanFit</strong> — Módulo <em>Mi Plan de Entrenamiento</em> | UADE
-            — Desarrollo Frontend II (TP2)
-          </p>
-          <p className="sf-footer-meta">
-            React + Vite + Cloud Firestore (<code>scanfit_entrenamientos</code>)
-          </p>
-        </div>
-      </footer>
-
       <EditExerciseModal
-        ejercicio={ejercicioEnEdicion}
-        onGuardarEdicion={handleGuardarEdicion}
-        onCerrar={() => setEjercicioEnEdicion(null)}
-        guardando={guardandoEdicion}
+        exercise={editingExercise}
+        availableDays={availableDays}
+        onClose={() => setEditingExercise(null)}
+        onSave={handleSaveEdit}
       />
     </div>
   );
